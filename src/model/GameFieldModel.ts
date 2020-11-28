@@ -30,6 +30,7 @@ export type Coordinates = {
 
 export enum GameLevelState {
   RUNNING = "RUNNING",
+  PAUSED = "PAUSED",
   LOST = "LOST",
   WON = "WON",
 }

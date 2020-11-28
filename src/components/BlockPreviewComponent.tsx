@@ -31,26 +31,32 @@ export const BlockPreviewComponent = (props: BlockPreviewComponentProps) => {
     const block = blockFactory(props.blockType, getBlockGridPosition(props.blockType), props.blockType === BlockType.I ? Direction.RIGHT : Direction.UP);
 
     return (
-        <div>
+        <BlockPreviewWrapper>
             <NextBlockTitle>Next Block:</NextBlockTitle>
-            <BlockPreviewWrapper>
+            <BlockPreviewCellGridWrapper>
                 <BlockPreviewCellGrid>
                     {zipRange(5, 5).map(([row, col]) => {
                         const blockInCell = block.cells!.some(({row: cellRow, col: cellCol}) => row === cellRow && col === cellCol) ? block : undefined;
                         return <BlockPreviewCell key={row + "_" + col} block={blockInCell}/>
                     })}
                 </BlockPreviewCellGrid>
-            </BlockPreviewWrapper>
-        </div>
+            </BlockPreviewCellGridWrapper>
+        </BlockPreviewWrapper>
     )
 }
 
+const BlockPreviewWrapper = styled.div`
+  padding: 1em;
+  margin-top: 1.0em;
+  border: 1px solid black;
+  border-radius: 0.2em;
+`
+
 const NextBlockTitle = styled.div`
-  margin-top: 1.2em;
   font-size: 1.5em;
 `
 
-const BlockPreviewWrapper = styled.div`
+const BlockPreviewCellGridWrapper = styled.div`
   display: flex;
   justify-content: center;
 `
@@ -67,6 +73,6 @@ type BlockPreviewCellProps = {
 }
 
 const BlockPreviewCell = styled.div`
-  border: ${(props: BlockPreviewCellProps) => props.block ? '1px' : '0'} solid grey;
+  border: ${(props: BlockPreviewCellProps) => props.block ? '2px' : '0'} solid black;
   background-color: ${(props: BlockPreviewCellProps) => props.block ? props.block.color : 'white'};
 `

@@ -45,13 +45,16 @@ export const GameField = (props: GameFieldProps) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      if(state.gameLevelState !== GameLevelState.RUNNING) {
+        return;
+      }
       dispatch({
         type: "move_active_block",
         payload: Direction.DOWN,
       });
     }, 1_000);
     return () => clearInterval(interval);
-  });
+  }, [state.gameLevelState]);
 
   useEffect(() => {
     if (state.activeBlock) {
@@ -63,7 +66,7 @@ export const GameField = (props: GameFieldProps) => {
       type: "add_block",
       payload: blockType,
     });
-  }, [state.activeBlock, props.rows, randomNumberGenerator, getRandomBlock]);
+  }, [state.activeBlock, getRandomBlock]);
 
   useEffect(() => {
     if (!state.cellsMarkedForDestruction.length) {
@@ -77,7 +80,8 @@ export const GameField = (props: GameFieldProps) => {
   const handleKeyDown = (e: any) => {
     if (
       !state.activeBlock ||
-      !isWithinGameField(state.activeBlock, state.gameField.rows)
+      !isWithinGameField(state.activeBlock, state.gameField.rows) ||
+      state.gameLevelState !== GameLevelState.RUNNING
     ) {
       return;
     }
@@ -97,7 +101,8 @@ export const GameField = (props: GameFieldProps) => {
   const handleKeyUp = (e: any) => {
     if (
         !state.activeBlock ||
-        !isWithinGameField(state.activeBlock, state.gameField.rows)
+        !isWithinGameField(state.activeBlock, state.gameField.rows) ||
+        state.gameLevelState !== GameLevelState.RUNNING
     ) {
       return;
     }
@@ -120,7 +125,8 @@ export const GameField = (props: GameFieldProps) => {
   usePrev(({prevDeps}) => {
     if (
         !state.activeBlock ||
-        !isWithinGameField(state.activeBlock, state.gameField.rows)
+        !isWithinGameField(state.activeBlock, state.gameField.rows) ||
+        state.gameLevelState !== GameLevelState.RUNNING
     ) {
       return;
     }
@@ -133,6 +139,10 @@ export const GameField = (props: GameFieldProps) => {
   const restart = () => {
     dispatch({ type: "restart", payload: getRandomBlock() });
   };
+
+  const togglePause = useCallback((shouldPause: boolean) => {
+    dispatch({type: "toggle_pause", payload: shouldPause});
+  }, []);
 
   return (
     <React.Fragment>
@@ -159,7 +169,7 @@ export const GameField = (props: GameFieldProps) => {
             projectedCells={state.activeBlockProjectedCells || []}
           />
         </StyledGameField>
-        <HudComponent score={state.score} nextBlock={state.nextBlock} />
+        <HudComponent score={state.score} nextBlock={state.nextBlock} onPause={togglePause} />
       </GameFieldWrapper>
     </React.Fragment>
   );

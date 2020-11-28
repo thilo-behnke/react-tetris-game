@@ -22,6 +22,7 @@ export type GameStateAction =
   | { type: "turn_active_block" }
   | { type: "destroy_marked_cells" }
   | { type: "hold_active_block" }
+  | { type: "toggle_pause"; payload: boolean }
   | { type: "restart"; payload: BlockType };
 
 export const GameStateReducer = (state: GameState, action: GameStateAction): GameState => {
@@ -31,8 +32,7 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
     case "move_active_block":
       if (
         !state.activeBlock ||
-        action.payload === Direction.UP ||
-        state.gameLevelState !== GameLevelState.RUNNING
+        action.payload === Direction.UP
       ) {
         return state;
       }
@@ -174,6 +174,14 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         return state;
       }
       return {...spawnBlock(state, state.activeBlock!.type), holdActiveLocked: true};
+    case "toggle_pause":
+      if(state.gameLevelState !== GameLevelState.RUNNING && state.gameLevelState !== GameLevelState.PAUSED) {
+        return state;
+      }
+      return {
+        ...state,
+        gameLevelState: action.payload ? GameLevelState.PAUSED : GameLevelState.RUNNING
+      }
     case "restart":
       return createInitialState(
         state.gameField.rows,
