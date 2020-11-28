@@ -1,19 +1,14 @@
-import {getHighestCell, getLowestCell, isAboveGameField, isOutOfBounds} from "../utils/GameFieldUtils";
-import {
-  Block,
-  BlockType,
-  Coordinates,
-  Direction,
-  GameLevelState,
-} from "../model/GameFieldModel";
-import { blockFactory, getCellsForBlock } from "../factory/BlockFactory";
-import { checkCollision, checkOverlap } from "../collision/CollisionChecker";
+import {getHighestCell, isAboveGameField, isOutOfBounds} from "../utils/GameFieldUtils";
+import {Block, BlockType, Coordinates, Direction, GameLevelState,} from "../model/GameFieldModel";
+import {blockFactory, getCellsForBlock} from "../factory/BlockFactory";
+import {checkCollision, checkOverlap} from "../collision/CollisionChecker";
 
 export type GameState = {
   gameField: { rows: number; cols: number };
   nextBlock: BlockType;
   activeBlock: Block | null;
   activeBlockProjectedCells: Coordinates[] | null;
+  holdActiveLocked: boolean;
   blocks: Block[];
   cellsMarkedForDestruction: Coordinates[];
   gameLevelState: GameLevelState;
@@ -26,31 +21,13 @@ export type GameStateAction =
   | { type: "crash_active_block" }
   | { type: "turn_active_block" }
   | { type: "destroy_marked_cells" }
+  | { type: "hold_active_block" }
   | { type: "restart"; payload: BlockType };
 
 export const GameStateReducer = (state: GameState, action: GameStateAction): GameState => {
   switch (action.type) {
     case "add_block":
-      const block = blockFactory(state.nextBlock, {
-        row: state.gameField.rows - 1,
-        col: Math.floor(state.gameField.cols / 2),
-      });
-      // Currently this is only relevant for the I block, because its anchor is not part of its lowest row.
-      const blockSpawnPositioned = blockFactory(block.type, {col: block.anchor.col, row: state.gameField.rows + state.gameField.rows - 2 - getHighestCell(block).row});
-      if (checkOverlap(blockSpawnPositioned, state.blocks, state.gameField)) {
-        return {
-          ...state,
-          activeBlock: blockSpawnPositioned,
-          gameLevelState: GameLevelState.LOST,
-        };
-      }
-      const activeBlockProjectedCells = getProjectedPosition(blockSpawnPositioned, state).cells!;
-      return {
-        ...state,
-        activeBlock: blockSpawnPositioned,
-        activeBlockProjectedCells,
-        nextBlock: action.payload,
-      };
+        return spawnBlock(state, action.payload);
     case "move_active_block":
       if (
         !state.activeBlock ||
@@ -192,6 +169,11 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         cellsMarkedForDestruction: [],
         score,
       };
+    case "hold_active_block":
+      if(!state.activeBlock || state.holdActiveLocked) {
+        return state;
+      }
+      return {...spawnBlock(state, state.activeBlock!.type), holdActiveLocked: true};
     case "restart":
       return createInitialState(
         state.gameField.rows,
@@ -213,6 +195,7 @@ export const createInitialState = (
     blocks: [],
     activeBlock: null,
     activeBlockProjectedCells: null,
+    holdActiveLocked: false,
     gameField: { rows, cols },
     gameLevelState: GameLevelState.RUNNING,
     cellsMarkedForDestruction: [],
@@ -258,6 +241,7 @@ export const handleFloorContact = (
     ...state,
     activeBlock: null,
     blocks: updatedBlocks,
+    holdActiveLocked: false,
     cellsMarkedForDestruction: cellsToDestroy,
   };
 };
@@ -280,4 +264,28 @@ const getProjectedPosition = (block: Block, state: GameState) => {
     );
   }
   return newBlock;
+}
+
+const spawnBlock = (state: GameState, nextBlock: BlockType) => {
+  const block = blockFactory(state.nextBlock, {
+    row: state.gameField.rows - 1,
+    col: Math.floor(state.gameField.cols / 2),
+  });
+  // Currently this is only relevant for the I block, because its anchor is not part of its lowest row.
+  const blockSpawnPositioned = blockFactory(block.type, {col: block.anchor.col, row: state.gameField.rows + state.gameField.rows - 2 - getHighestCell(block).row});
+  if (checkOverlap(blockSpawnPositioned, state.blocks, state.gameField)) {
+    return {
+      ...state,
+      activeBlock: blockSpawnPositioned,
+      gameLevelState: GameLevelState.LOST,
+      nextBlock
+    };
+  }
+  const activeBlockProjectedCells = getProjectedPosition(blockSpawnPositioned, state).cells!;
+  return {
+    ...state,
+    activeBlock: blockSpawnPositioned,
+    activeBlockProjectedCells,
+    nextBlock
+  };
 }

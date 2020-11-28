@@ -91,11 +91,26 @@ export const GameField = (props: GameFieldProps) => {
       case 40:
         dispatch({ type: "move_active_block", payload: Direction.DOWN });
         return;
+    }
+  };
+
+  const handleKeyUp = (e: any) => {
+    if (
+        !state.activeBlock ||
+        !isWithinGameField(state.activeBlock, state.gameField.rows)
+    ) {
+      return;
+    }
+
+    switch (e.keyCode) {
+      case 17:
+        dispatch({ type: "hold_active_block" });
+        return;
       case 32:
         dispatch({ type: "turn_active_block", payload: Direction.DOWN });
         return;
     }
-  };
+  }
 
   const doubleClickRegistered = useDoubleClick(
       gameFieldEl,
@@ -130,6 +145,7 @@ export const GameField = (props: GameFieldProps) => {
         <StyledGameField
           ref={gameFieldEl}
           onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
           tabIndex={0}
           cols={props.cols}
           rows={props.rows}
