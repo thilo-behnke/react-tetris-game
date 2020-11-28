@@ -165,7 +165,7 @@ export const GameField = (props: GameFieldProps) => {
     (gameFieldEl.current! as any).style.animation = "none";
     // TODO: Workaround, improve.
     setTimeout(() => {
-      (gameFieldEl.current! as any).style.animation = "crash-down 0.2s linear";
+      (gameFieldEl.current! as any).style.animation = "crash-down 0.3s linear";
     }, 0);
   }, [doubleClickRegistered, state.activeBlock, state.gameField.rows])
 
@@ -214,7 +214,7 @@ export const GameFieldWrapper = styled.div`
       transform: translateY(0);
     }
     50% {
-      transform: translateY(25px);
+      transform: translateY(10px);
     }
   }
   
