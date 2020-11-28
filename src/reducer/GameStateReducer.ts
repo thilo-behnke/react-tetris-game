@@ -10,7 +10,7 @@ export type GameState = {
   activeBlockProjectedCells: Coordinates[] | null;
   holdActiveLocked: boolean;
   blocks: Block[];
-  cellsMarkedForDestruction: Coordinates[];
+  activeBlockHasFloorContact: boolean;
   gameLevelState: GameLevelState;
   score: number;
 };
@@ -20,7 +20,7 @@ export type GameStateAction =
   | { type: "move_active_block"; payload: Direction }
   | { type: "crash_active_block" }
   | { type: "turn_active_block" }
-  | { type: "destroy_marked_cells" }
+  | { type: "update_field" }
   | { type: "hold_active_block" }
   | { type: "toggle_pause"; payload: boolean }
   | { type: "restart"; payload: BlockType };
@@ -75,7 +75,7 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
               ...state.activeBlock.anchor,
               col: state.activeBlock.anchor.col + 1,
             };
-      const updatedBlock = {
+      const updatedBlock = action.payload === Direction.DOWN && currentBlockCollisions.includes(Direction.DOWN) ? state.activeBlock : {
         ...state.activeBlock,
         anchor: updatedAnchor,
         cells: getCellsForBlock({
@@ -84,14 +84,16 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
           type: state.activeBlock.type,
         }),
       };
+      const updatedBlockCollisions = checkCollision(updatedBlock, state.blocks, state.gameField);
 
       return {
         ...state,
         activeBlock: updatedBlock,
-        activeBlockProjectedCells: getProjectedPosition(updatedBlock, state).cells!
+        activeBlockProjectedCells: getProjectedPosition(updatedBlock, state).cells!,
+        activeBlockHasFloorContact: updatedBlockCollisions.includes(Direction.DOWN)
       };
     case "turn_active_block":
-      if (!state.activeBlock) {
+      if (!state.activeBlock || state.activeBlockHasFloorContact) {
         return state;
       }
       const newOrientation = (state.activeBlock!.orientation + 1) % 4;
@@ -106,9 +108,10 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         return state;
       }
       let newBlock = getProjectedPosition(state.activeBlock, state);
+      const collisions = checkCollision(newBlock, state.blocks, state.gameField);
       const newState = handleFloorContact(
         newBlock,
-        checkCollision(newBlock, state.blocks, state.gameField),
+        collisions,
         state
       );
       if (newState) {
@@ -117,13 +120,33 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
       return {
         ...state,
         activeBlock: newBlock,
+        activeBlockHasFloorContact: collisions.includes(Direction.DOWN)
       };
-    case "destroy_marked_cells":
-      const blocksWithoutDestroyedCells = state.blocks
+    case "update_field":
+      const updatedBlocks = [...state.blocks, state.activeBlock!];
+      const cellsToDestroy = updatedBlocks
+          .reduce((acc: Coordinates[], { cells }) => [...acc, ...cells!], [])
+          .reduce((acc: any[], cell) => {
+            const existingRecord =
+                acc.find(({ row }) => row === cell.row)?.cols || [];
+            return [
+              ...acc.filter(({ row }) => row !== cell.row),
+              { row: cell.row, cols: [...existingRecord, cell.col] },
+            ];
+          }, [])
+          .filter(({ cols }) => cols.length === state.gameField.cols)
+          .reduce(
+              (acc, { row, cols }) => [
+                ...acc,
+                ...cols.map((c: number) => ({ row, col: c })),
+              ],
+              []
+          ) as Coordinates[];
+      const blocksWithoutDestroyedCells = updatedBlocks
         .map(({ cells, ...rest }) => {
           const updatedCells = cells!.filter(
             (cell: Coordinates) =>
-              !state.cellsMarkedForDestruction.some(
+              !cellsToDestroy.some(
                 ({ row, col }: { row: number; col: number }) =>
                   cell.row === row && cell.col === col
               )
@@ -134,7 +157,7 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
           };
         })
         .filter(({ cells }) => cells.length);
-      const rowsDestroyed = state.cellsMarkedForDestruction.reduce(
+      const rowsDestroyed = cellsToDestroy.reduce(
         (acc: number[], { row }) => (acc.includes(row) ? acc : [...acc, row]),
         []
       );
@@ -153,13 +176,13 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         })
       );
       const score =
-        rowsDestroyed.length * state.cellsMarkedForDestruction.length * 10;
+        rowsDestroyed.length * cellsToDestroy.length * 10;
       return {
         ...state,
         activeBlock: null,
         activeBlockProjectedCells: null,
         blocks: blocksWithUpdatedPositions,
-        cellsMarkedForDestruction: [],
+        activeBlockHasFloorContact: false,
         score,
       };
     case "hold_active_block":
@@ -190,7 +213,7 @@ export const createInitialState = (
   rows: number,
   cols: number,
   nextBlock: BlockType
-) => {
+): GameState => {
   return {
     nextBlock,
     blocks: [],
@@ -198,8 +221,8 @@ export const createInitialState = (
     activeBlockProjectedCells: null,
     holdActiveLocked: false,
     gameField: { rows, cols },
+    activeBlockHasFloorContact: false,
     gameLevelState: GameLevelState.RUNNING,
-    cellsMarkedForDestruction: [],
     score: 0,
   };
 };
@@ -209,42 +232,14 @@ export const handleFloorContact = (
   collisions: Direction[],
   state: GameState
 ): GameState | null => {
-  if (!collisions.includes(Direction.DOWN)) {
-    return null;
-  }
-  if (isAboveGameField(block, state.gameField.rows)) {
+  if (collisions.includes(Direction.DOWN) && isAboveGameField(block, state.gameField.rows)) {
     return {
       ...state,
       activeBlock: block,
       gameLevelState: GameLevelState.LOST,
     };
   }
-  const updatedBlocks = [...state.blocks, block];
-  const cellsToDestroy = updatedBlocks
-    .reduce((acc: Coordinates[], { cells }) => [...acc, ...cells!], [])
-    .reduce((acc: any[], cell) => {
-      const existingRecord =
-        acc.find(({ row }) => row === cell.row)?.cols || [];
-      return [
-        ...acc.filter(({ row }) => row !== cell.row),
-        { row: cell.row, cols: [...existingRecord, cell.col] },
-      ];
-    }, [])
-    .filter(({ cols }) => cols.length === state.gameField.cols)
-    .reduce(
-      (acc, { row, cols }) => [
-        ...acc,
-        ...cols.map((c: number) => ({ row, col: c })),
-      ],
-      []
-    ) as Coordinates[];
-  return {
-    ...state,
-    activeBlock: null,
-    blocks: updatedBlocks,
-    holdActiveLocked: false,
-    cellsMarkedForDestruction: cellsToDestroy,
-  };
+  return null;
 };
 
 const getProjectedPosition = (block: Block, state: GameState) => {
@@ -297,7 +292,7 @@ const tryToTurnBlock = (state: GameState, newOrientation: Direction): Block => {
       state.activeBlock!.anchor,
       newOrientation
   );
-  if(!checkOverlap(updatedActiveBlock, state.blocks, state.gameField)) {
+  if(!checkOverlap(updatedActiveBlock, state.blocks, state.gameField) && !isOutOfBounds(updatedActiveBlock, state.gameField.cols)) {
       return updatedActiveBlock;
   }
 

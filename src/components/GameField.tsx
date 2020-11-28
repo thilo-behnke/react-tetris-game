@@ -4,7 +4,7 @@ import React, {
   useContext,
   useEffect,
   useReducer,
-  useRef,
+  useRef, useState,
 } from "react";
 import { BlockType, Direction, GameLevelState } from "../model/GameFieldModel";
 import { isWithinGameField } from "../utils/GameFieldUtils";
@@ -43,6 +43,8 @@ export const GameField = (props: GameFieldProps) => {
     createInitialState(props.rows, props.cols, getRandomBlock())
   );
 
+  const [movedOrTurned, setMovedOrTurned] = useState<boolean>(false);
+
   useEffect(() => {
     const interval = setInterval(() => {
       if(state.gameLevelState !== GameLevelState.RUNNING) {
@@ -68,14 +70,27 @@ export const GameField = (props: GameFieldProps) => {
     });
   }, [state.activeBlock, getRandomBlock]);
 
+  const timer = useRef<number | null>(null);
   useEffect(() => {
-    if (!state.cellsMarkedForDestruction.length) {
+    if(!state.activeBlockHasFloorContact) {
+      if(timer.current) {
+        clearTimeout(timer.current)
+      }
       return;
     }
-    setTimeout(() => {
-      dispatch({ type: "destroy_marked_cells" });
-    }, 200);
-  }, [state.cellsMarkedForDestruction]);
+    if(movedOrTurned && timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      dispatch({ type: "update_field" });
+    }, 1000);
+
+    return () => {
+      if(timer.current) {
+        clearTimeout(timer.current);
+      }
+    };
+  }, [timer, state.activeBlockHasFloorContact, movedOrTurned]);
 
   const handleKeyDown = (e: any) => {
     if (
@@ -87,12 +102,15 @@ export const GameField = (props: GameFieldProps) => {
     }
     switch (e.keyCode) {
       case 37:
+        setMovedOrTurned(true);
         dispatch({ type: "move_active_block", payload: Direction.LEFT });
         return;
       case 39:
+        setMovedOrTurned(true);
         dispatch({ type: "move_active_block", payload: Direction.RIGHT });
         return;
       case 40:
+        setMovedOrTurned(true);
         dispatch({ type: "move_active_block", payload: Direction.DOWN });
         return;
     }
@@ -112,6 +130,7 @@ export const GameField = (props: GameFieldProps) => {
         dispatch({ type: "hold_active_block" });
         return;
       case 32:
+        setMovedOrTurned(true);
         dispatch({ type: "turn_active_block", payload: Direction.DOWN });
         return;
     }
