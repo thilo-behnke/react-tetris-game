@@ -176,13 +176,14 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         })
       );
       const score =
-        rowsDestroyed.length * cellsToDestroy.length * 10;
+        state.score + rowsDestroyed.length * cellsToDestroy.length * 10;
       return {
         ...state,
         activeBlock: null,
         activeBlockProjectedCells: null,
         blocks: blocksWithUpdatedPositions,
         activeBlockHasFloorContact: false,
+        holdActiveLocked: false,
         score,
       };
     case "hold_active_block":
