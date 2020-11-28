@@ -10,7 +10,7 @@ export const getBlockColor = (type: BlockType): string => {
     case BlockType.J:
       return "blue";
     case BlockType.T:
-      return "pink";
+      return "purple";
     case BlockType.O:
       return "yellow";
     case BlockType.S:

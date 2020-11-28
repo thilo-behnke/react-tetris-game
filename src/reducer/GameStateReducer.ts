@@ -120,79 +120,10 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
       if (newState) {
         return newState;
       }
-      return {
-        ...state,
-        activeBlock: newBlock,
-        activeBlockHasFloorContact: collisions.includes(Direction.DOWN)
-      };
+      return updateField(state, [...state.blocks, newBlock]);
     case "update_field":
       const updatedBlocks = [...state.blocks, state.activeBlock!];
-      const cellsToDestroy = updatedBlocks
-          .reduce((acc: Coordinates[], { cells }) => [...acc, ...cells!], [])
-          .reduce((acc: any[], cell) => {
-            const existingRecord =
-                acc.find(({ row }) => row === cell.row)?.cols || [];
-            return [
-              ...acc.filter(({ row }) => row !== cell.row),
-              { row: cell.row, cols: [...existingRecord, cell.col] },
-            ];
-          }, [])
-          .filter(({ cols }) => cols.length === state.gameField.cols)
-          .reduce(
-              (acc, { row, cols }) => [
-                ...acc,
-                ...cols.map((c: number) => ({ row, col: c })),
-              ],
-              []
-          ) as Coordinates[];
-      const blocksWithoutDestroyedCells = updatedBlocks
-        .map(({ cells, ...rest }) => {
-          const updatedCells = cells!.filter(
-            (cell: Coordinates) =>
-              !cellsToDestroy.some(
-                ({ row, col }: { row: number; col: number }) =>
-                  cell.row === row && cell.col === col
-              )
-          );
-          return {
-            cells: updatedCells,
-            ...rest,
-          };
-        })
-        .filter(({ cells }) => cells.length);
-      const rowsDestroyed = cellsToDestroy.reduce(
-        (acc: number[], { row }) => (acc.includes(row) ? acc : [...acc, row]),
-        []
-      );
-      const blocksWithUpdatedPositions = blocksWithoutDestroyedCells.map(
-        ({ cells, ...rest }) => ({
-          ...rest,
-          cells: cells.map(({ row, col }) => {
-            const rowsDestroyedBelow = rowsDestroyed.filter(
-              (rowDestroyed) => rowDestroyed < row
-            );
-            return {
-              row: row - rowsDestroyedBelow.length,
-              col,
-            };
-          }),
-        })
-      );
-      const score =
-        state.score + rowsDestroyed.length * cellsToDestroy.length * 10;
-      const newRowsDestroyed = state.rowsDestroyed + rowsDestroyed.length;
-      const speed = state.baseSpeed * (Math.min(0.8 ** Math.floor(newRowsDestroyed / 6), 1))
-      return {
-        ...state,
-        activeBlock: null,
-        activeBlockProjectedCells: null,
-        blocks: blocksWithUpdatedPositions,
-        activeBlockHasFloorContact: false,
-        holdActiveLocked: false,
-        score,
-        rowsDestroyed: newRowsDestroyed,
-        speed
-      };
+      return updateField(state, updatedBlocks);
     case "hold_active_block":
       if(!state.activeBlock || state.holdActiveLocked) {
         return state;
@@ -320,4 +251,73 @@ const tryToTurnBlock = (state: GameState, newOrientation: Direction): Block => {
     }
   }
   return repositionedBlock;
+}
+
+const updateField = (state: GameState, updatedBlocks: Block[]) => {
+  const cellsToDestroy = updatedBlocks
+      .reduce((acc: Coordinates[], { cells }) => [...acc, ...cells!], [])
+      .reduce((acc: any[], cell) => {
+        const existingRecord =
+            acc.find(({ row }) => row === cell.row)?.cols || [];
+        return [
+          ...acc.filter(({ row }) => row !== cell.row),
+          { row: cell.row, cols: [...existingRecord, cell.col] },
+        ];
+      }, [])
+      .filter(({ cols }) => cols.length === state.gameField.cols)
+      .reduce(
+          (acc, { row, cols }) => [
+            ...acc,
+            ...cols.map((c: number) => ({ row, col: c })),
+          ],
+          []
+      ) as Coordinates[];
+  const blocksWithoutDestroyedCells = updatedBlocks
+      .map(({ cells, ...rest }) => {
+        const updatedCells = cells!.filter(
+            (cell: Coordinates) =>
+                !cellsToDestroy.some(
+                    ({ row, col }: { row: number; col: number }) =>
+                        cell.row === row && cell.col === col
+                )
+        );
+        return {
+          cells: updatedCells,
+          ...rest,
+        };
+      })
+      .filter(({ cells }) => cells.length);
+  const rowsDestroyed = cellsToDestroy.reduce(
+      (acc: number[], { row }) => (acc.includes(row) ? acc : [...acc, row]),
+      []
+  );
+  const blocksWithUpdatedPositions = blocksWithoutDestroyedCells.map(
+      ({ cells, ...rest }) => ({
+        ...rest,
+        cells: cells.map(({ row, col }) => {
+          const rowsDestroyedBelow = rowsDestroyed.filter(
+              (rowDestroyed) => rowDestroyed < row
+          );
+          return {
+            row: row - rowsDestroyedBelow.length,
+            col,
+          };
+        }),
+      })
+  );
+  const score =
+      state.score + rowsDestroyed.length * cellsToDestroy.length * 10;
+  const newRowsDestroyed = state.rowsDestroyed + rowsDestroyed.length;
+  const speed = state.baseSpeed * (Math.min(0.8 ** Math.floor(newRowsDestroyed / 6), 1))
+  return {
+    ...state,
+    activeBlock: null,
+    activeBlockProjectedCells: null,
+    blocks: blocksWithUpdatedPositions,
+    activeBlockHasFloorContact: false,
+    holdActiveLocked: false,
+    score,
+    rowsDestroyed: newRowsDestroyed,
+    speed
+  };
 }

@@ -92,6 +92,15 @@ export const GameField = (props: GameFieldProps) => {
     };
   }, [state.speed, timer, state.activeBlockHasFloorContact, movedOrTurned]);
 
+  // usePrev(({prevDeps}) => {
+  //   const diff = state.rowsDestroyed - prevDeps[0];
+  //   if(diff <= 0) {
+  //     return;
+  //   }
+  //
+  //   (gameFieldEl.current! as any).style.animation = "example 0.2s linear";
+  // }, [state.rowsDestroyed])
+
   const handleKeyDown = (e: any) => {
     if (
       !state.activeBlock ||
@@ -152,7 +161,12 @@ export const GameField = (props: GameFieldProps) => {
     if(!doubleClickRegistered || prevDeps[0]) {
       return;
     }
-    dispatch({type: 'crash_active_block'})
+    dispatch({type: 'crash_active_block'});
+    (gameFieldEl.current! as any).style.animation = "none";
+    // TODO: Workaround, improve.
+    setTimeout(() => {
+      (gameFieldEl.current! as any).style.animation = "crash-down 0.2s linear";
+    }, 0);
   }, [doubleClickRegistered, state.activeBlock, state.gameField.rows])
 
   const restart = () => {
@@ -195,13 +209,24 @@ export const GameField = (props: GameFieldProps) => {
 };
 
 export const GameFieldWrapper = styled.div`
-  min-height: 100%;
+  @keyframes crash-down {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(25px);
+    }
+  }
+  
   margin-top: 20px;
   justify-content: stretch;
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1fr;
   grid-column-gap: 20px;
   grid-template-areas: "left game controls right";
+  
+  position: absolute;
+  //animation: example 0.2s linear;
 `;
 
 export const StyledGameField = styled.div`
