@@ -9,22 +9,24 @@ export type BlockPreviewComponentProps = {
 }
 
 export const BlockPreviewComponent = (props: BlockPreviewComponentProps) => {
+    const rows = 5, cols = 5;
+
     const getBlockGridPosition = useCallback((blockType: BlockType) => {
         switch(blockType) {
             case BlockType.I:
-                return {row: 2, col: 2}
+                return {row: rows - 3, col: 2}
             case BlockType.J:
-                return {row: 0, col: 2}
+                return {row: rows - 3, col: 2}
             case BlockType.L:
-                return {row: 0, col: 2}
+                return {row: rows - 3, col: 2}
             case BlockType.O:
-                return {row: 1, col: 1}
+                return {row: rows - 2, col: 1}
             case BlockType.S:
-                return {row: 0, col: 2}
+                return {row: rows - 3, col: 2}
             case BlockType.Z:
-                return {row: 0, col: 2}
+                return {row: rows - 3, col: 2}
             case BlockType.T:
-                return {row: 0, col: 2}
+                return {row: rows - 3, col: 2}
         }
     }, []);
 
@@ -35,7 +37,9 @@ export const BlockPreviewComponent = (props: BlockPreviewComponentProps) => {
             <NextBlockTitle>Next Block:</NextBlockTitle>
             <BlockPreviewCellGridWrapper>
                 <BlockPreviewCellGrid>
-                    {zipRange(5, 5).map(([row, col]) => {
+                    {zipRange(rows, cols)
+                        .map(([row, col]) => [rows - 1 - row, col])
+                        .map(([row, col]) => {
                         const blockInCell = block.cells!.some(({row: cellRow, col: cellCol}) => row === cellRow && col === cellCol) ? block : undefined;
                         return <BlockPreviewCell key={row + "_" + col} block={blockInCell}/>
                     })}
