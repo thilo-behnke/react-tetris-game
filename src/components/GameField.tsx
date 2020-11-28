@@ -54,7 +54,7 @@ export const GameField = (props: GameFieldProps) => {
         type: "move_active_block",
         payload: Direction.DOWN,
       });
-    }, 1_000);
+    }, 800);
     return () => clearInterval(interval);
   }, [state.gameLevelState]);
 
