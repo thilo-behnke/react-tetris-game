@@ -95,14 +95,7 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         return state;
       }
       const newOrientation = (state.activeBlock!.orientation + 1) % 4;
-      const updatedActiveBlock = blockFactory(
-        state.activeBlock!.type,
-        state.activeBlock!.anchor,
-        newOrientation
-      );
-      if (checkOverlap(updatedActiveBlock, state.blocks, state.gameField)) {
-        return state;
-      }
+      const updatedActiveBlock = tryToTurnBlock(state, newOrientation);
       return {
         ...state,
         activeBlock: updatedActiveBlock,
@@ -296,4 +289,29 @@ const spawnBlock = (state: GameState, nextBlock: BlockType) => {
     activeBlockProjectedCells,
     nextBlock
   };
+}
+
+const tryToTurnBlock = (state: GameState, newOrientation: Direction): Block => {
+  let updatedActiveBlock = blockFactory(
+      state.activeBlock!.type,
+      state.activeBlock!.anchor,
+      newOrientation
+  );
+  if(!checkOverlap(updatedActiveBlock, state.blocks, state.gameField)) {
+      return updatedActiveBlock;
+  }
+
+  let repositionedBlock = state.activeBlock!;
+  const colAdjustments = [-1, 1, -2, 2];
+  for(const adjustment of colAdjustments) {
+    repositionedBlock = blockFactory(
+        state.activeBlock!.type,
+        {...state.activeBlock!.anchor, col: state.activeBlock!.anchor.col + adjustment},
+        newOrientation
+    );
+    if(!checkOverlap(repositionedBlock, state.blocks, state.gameField) && !isOutOfBounds(repositionedBlock, state.gameField.cols)) {
+      break;
+    }
+  }
+  return repositionedBlock;
 }
