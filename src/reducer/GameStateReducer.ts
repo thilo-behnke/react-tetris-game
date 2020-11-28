@@ -13,6 +13,9 @@ export type GameState = {
   activeBlockHasFloorContact: boolean;
   gameLevelState: GameLevelState;
   score: number;
+  rowsDestroyed: number;
+  baseSpeed: number;
+  speed: number;
 };
 
 export type GameStateAction =
@@ -177,6 +180,8 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
       );
       const score =
         state.score + rowsDestroyed.length * cellsToDestroy.length * 10;
+      const newRowsDestroyed = state.rowsDestroyed + rowsDestroyed.length;
+      const speed = state.baseSpeed * (Math.min(0.8 ** Math.floor(newRowsDestroyed / 6), 1))
       return {
         ...state,
         activeBlock: null,
@@ -185,6 +190,8 @@ export const GameStateReducer = (state: GameState, action: GameStateAction): Gam
         activeBlockHasFloorContact: false,
         holdActiveLocked: false,
         score,
+        rowsDestroyed: newRowsDestroyed,
+        speed
       };
     case "hold_active_block":
       if(!state.activeBlock || state.holdActiveLocked) {
@@ -225,6 +232,9 @@ export const createInitialState = (
     activeBlockHasFloorContact: false,
     gameLevelState: GameLevelState.RUNNING,
     score: 0,
+    rowsDestroyed: 0,
+    baseSpeed: 1_000,
+    speed: 1_000
   };
 };
 

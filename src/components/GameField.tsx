@@ -54,9 +54,9 @@ export const GameField = (props: GameFieldProps) => {
         type: "move_active_block",
         payload: Direction.DOWN,
       });
-    }, 800);
+    }, state.speed);
     return () => clearInterval(interval);
-  }, [state.gameLevelState]);
+  }, [state.gameLevelState, state.speed]);
 
   useEffect(() => {
     if (state.activeBlock) {
@@ -83,14 +83,14 @@ export const GameField = (props: GameFieldProps) => {
     }
     timer.current = setTimeout(() => {
       dispatch({ type: "update_field" });
-    }, 1000);
+    }, state.speed);
 
     return () => {
       if(timer.current) {
         clearTimeout(timer.current);
       }
     };
-  }, [timer, state.activeBlockHasFloorContact, movedOrTurned]);
+  }, [state.speed, timer, state.activeBlockHasFloorContact, movedOrTurned]);
 
   const handleKeyDown = (e: any) => {
     if (
