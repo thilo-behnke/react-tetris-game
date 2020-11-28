@@ -25,8 +25,9 @@ export const HudComponent = (props: HudComponentProps) => {
 const HudWrapper = styled.div`
   grid-area: controls;
   border: 1px solid black;
-  border-radius: 1em;
+  border-radius: 0.5em;
   padding: 10px;
+  background-color: lightgrey;
   
   display: flex;
   flex-flow: column nowrap;
@@ -41,4 +42,5 @@ const StyledScore = styled.div`
   border: 1px solid black;
   border-radius: 0.2em;
   text-align: center;
+  background-color: white;
 `

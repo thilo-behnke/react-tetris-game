@@ -54,6 +54,7 @@ const BlockPreviewWrapper = styled.div`
   margin-top: 1.0em;
   border: 1px solid black;
   border-radius: 0.2em;
+  background-color: white;
 `
 
 const NextBlockTitle = styled.div`

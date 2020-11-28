@@ -29,7 +29,7 @@ export const HelpComponent = (props: HelpComponentProps) => {
     };
 
     return <StyledHelpComponentWrapper>
-        <HelpCircle style={{cursor: 'pointer'}} onClick={() => setShowHelp(true)}/>
+        <HelpCircleWrapper onClick={() => setShowHelp(true)}><HelpCircle/></HelpCircleWrapper>
         <ReactModal style={customStyles} isOpen={showHelp} ariaHideApp={false} shouldCloseOnEsc={true}>
             <ModalWrapper>
                 <CloseIcon onClick={() => setShowHelp(false)}/>
@@ -72,5 +72,15 @@ const ModalContent = styled.div`
     text-align: center;
     margin-bottom: 2em;
   }
+`
+
+const HelpCircleWrapper = styled.button`
+  padding: 0;
+  margin: 0;
+  height: 24px;
+  border-radius: 1em;
+  border: 0;
+  cursor: pointer;
+  background-color: white;
 `
 
