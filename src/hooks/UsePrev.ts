@@ -1,5 +1,4 @@
-import { DependencyList, EffectCallback, useEffect, useState } from "react";
-import { deepStrictEqual } from "assert";
+import {DependencyList, useEffect, useState} from "react";
 
 export type PrevDepEffectCallback = <Args>({
   prevDeps,
