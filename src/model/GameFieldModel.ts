@@ -3,8 +3,12 @@ export type Block = {
   type: BlockType;
   color: string;
   orientation: Direction;
-  cells?: Array<Coordinates>;
+  cells?: Array<Cell>;
 };
+
+export type Cell = Coordinates & {
+  isMarkedForDestruction?: boolean;
+}
 
 export enum BlockType {
   I,

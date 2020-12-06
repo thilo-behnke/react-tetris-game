@@ -6,7 +6,7 @@ import React, {
   useReducer,
   useRef, useState,
 } from "react";
-import { BlockType, Direction, GameLevelState } from "../model/GameFieldModel";
+import {BlockType, Cell, Direction, GameLevelState} from "../model/GameFieldModel";
 import { isWithinGameField } from "../utils/GameFieldUtils";
 import { GameStateModal } from "./GameStateModal";
 import {
@@ -92,15 +92,6 @@ export const GameField = (props: GameFieldProps) => {
     };
   }, [state.speed, timer, state.activeBlockHasFloorContact, movedOrTurned]);
 
-  // usePrev(({prevDeps}) => {
-  //   const diff = state.rowsDestroyed - prevDeps[0];
-  //   if(diff <= 0) {
-  //     return;
-  //   }
-  //
-  //   (gameFieldEl.current! as any).style.animation = "example 0.2s linear";
-  // }, [state.rowsDestroyed])
-
   const handleKeyDown = (e: any) => {
     if (
       !state.activeBlock ||
@@ -176,6 +167,15 @@ export const GameField = (props: GameFieldProps) => {
   const togglePause = useCallback((shouldPause: boolean) => {
     dispatch({type: "toggle_pause", payload: shouldPause});
   }, []);
+
+  useEffect(() => {
+    const markedForDestruction = state.blocks.reduce((acc: Cell[], {cells}) => [...acc, ...cells!], []).filter(({isMarkedForDestruction}) => isMarkedForDestruction);
+    if(markedForDestruction.length) {
+        setTimeout(() => {
+            dispatch({type: "destroy_marked_cells"});
+        }, 300)
+    }
+  }, [state.blocks, dispatch])
 
   return (
     <React.Fragment>

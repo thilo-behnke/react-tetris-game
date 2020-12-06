@@ -22,11 +22,13 @@ export const CellsComponent = (props: CellsComponentProps) => {
             )
           );
           const isProjectedCell = props.projectedCells.some(({row: projectedRow, col: projectedCol}) => row === projectedRow && col === projectedCol);
+          const cellIsMarkedForDestruction = blockAtPosition?.cells!.find(({row: cellRow, col: cellCol}) => row === cellRow && col === cellCol)?.isMarkedForDestruction;
           return (
             <StyledCell
               key={col + "-" + row}
               color={blockAtPosition ? blockAtPosition.color : isProjectedCell ? 'lightgrey' : undefined}
               highlightBorder={!!blockAtPosition}
+              shouldDestroy={cellIsMarkedForDestruction}
             />
           );
         })}
@@ -37,10 +39,25 @@ export const CellsComponent = (props: CellsComponentProps) => {
 export type StyledCellProps = {
   color?: string;
   highlightBorder: boolean;
+  shouldDestroy?: boolean;
 };
 
 export const StyledCell = styled.div`
+  @keyframes vaporize-block {
+    0% {
+      transform: scaleY(1);
+    }
+    20% {
+      transform: scaleY(1.3);
+    }
+    100% {
+      transform: scaleY(0);
+    }
+  }
+
   border: ${(props: StyledCellProps) => (props.highlightBorder ? "2px" : "1px")} solid
     ${(props: StyledCellProps) => (props.highlightBorder ? "black" : "grey")};
   background-color: ${(props: StyledCellProps) => props.color || null};
+  animation: ${(props: StyledCellProps) =>
+    props.shouldDestroy ? "vaporize-block 300ms linear" : "none"};
 `;
